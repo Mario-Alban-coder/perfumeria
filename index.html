@@ -204,7 +204,8 @@ const perf=id=>db.perfumes.find(p=>p.id===id);
 const vend=id=>db.vendedores.find(v=>v.id===id);
 const pubPrice=ml=>db.tamanos.find(t=>t.ml==ml)?.precio||0;
 const liqPrice=(v,ml)=>v?.precios?.[ml]??pubPrice(ml);   // lo que el vendedor le debe al dueño por unidad
-const pname=id=>perf(id)?.nombre||'(eliminado)';
+const pname=id=>id?perf(id)?.nombre||'(eliminado)':'Perfume sin especificar';
+const poolMano=(vid,ml)=>Object.entries(enMano(vid)).filter(([k])=>k.split('|')[1]==ml).reduce((a,[,c])=>a+c,0);
 
 /* ---------- cálculos ---------- */
 function enMano(vid){ // stock en poder del vendedor
@@ -305,13 +306,14 @@ function setupView(){
 function miCuenta(vid,hero){
   const v=vend(vid),d=debeAlDueno(vid),cb=porCobrar(vid),mano=totalMano(vid);
   const ms=enMano(vid);
+  const sinRef=Object.entries(ms).filter(([k,c])=>k.startsWith('|')&&c<0).map(([k,c])=>[k.slice(1),-c]);
   const rows=Object.entries(ms).filter(([,c])=>c>0).map(([k,c])=>{const[p,ml]=k.split('|');return{p:pname(p),ml,c}}).sort((a,b)=>a.p.localeCompare(b.p));
   const ult=db.ventas.filter(x=>x.vid===vid).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
   return `${hero?`<button class="btn pri hero" onclick="formVenta('${vid}')">＋ Registrar venta</button>`:''}<div class="grid">
    <div class="card kpi"><small>Perfumes en mi poder</small><b>${mano}</b></div>
    <div class="card kpi"><small>Le debo al dueño</small><b class="${d.saldo>0?'bad':'ok'}">${money(d.saldo)}</b><small>Vendido ${money(d.vendido)} · Pagado ${money(d.pagado)}</small></div>
    <div class="card kpi"><small>Mis clientes me deben</small><b>${money(cb.reduce((a,c)=>a+c.saldo,0))}</b><small>${cb.length} personas</small></div></div>
-  <div class="card tw"><h2>Mi inventario</h2>${rows.length?`<table><tr><th>Perfume</th><th>Tamaño</th><th class="n">Cantidad</th></tr>${rows.map(r=>`<tr><td>${esc(r.p)}</td><td>${r.ml} ml</td><td class="n">${r.c}</td></tr>`).join('')}</table>`:'<div class="empty">No tienes perfumes asignados.</div>'}</div>
+  <div class="card tw"><h2>Mi inventario</h2>${sinRef.length?`<p class="mute" style="margin:0 0 8px;font-size:13px">Ya vendiste sin indicar el perfume: ${sinRef.map(([ml,c])=>`${c} de ${ml} ml`).join(', ')}. Se descuentan del total, aunque abajo sigan apareciendo por perfume.</p>`:''}${rows.length?`<table><tr><th>Perfume</th><th>Tamaño</th><th class="n">Cantidad</th></tr>${rows.map(r=>`<tr><td>${esc(r.p)}</td><td>${r.ml} ml</td><td class="n">${r.c}</td></tr>`).join('')}</table>`:'<div class="empty">No tienes perfumes asignados.</div>'}</div>
   <div class="card"><h2>Mis últimas ventas</h2>${ult.length?ult.map(ventaCard).join(''):'<div class="empty">Sin ventas aún.</div>'}</div>`;
 }
 const fmtFecha=d=>new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})+' · '+new Date(d).toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'});
@@ -372,7 +374,7 @@ function formVenta(vid){
 function addVRow(){
   const n=++vrowN,d=document.createElement('div');d.className='vrow';
   d.innerHTML=`<div class="sizes">${db.tamanos.map(t=>`<label class="size"><input type="radio" name="ml${n}" value="${t.ml}" onchange="calc2()"><b>${t.ml} ml</b><span>${money(t.precio)}</span></label>`).join('')}</div>
-  <div class="l2">${acInput('placeholder="Perfume (escribe para buscar)"')}<input type="number" min="1" value="1" oninput="calc2()"><button type="button" class="link del" onclick="this.closest('.vrow').remove();calc2()">✕</button></div>`;
+  <div class="l2">${acInput('placeholder="Perfume (opcional)"')}<input type="number" min="1" value="1" oninput="calc2()"><button type="button" class="link del" onclick="this.closest('.vrow').remove();calc2()">✕</button></div>`;
   $('#vrows').appendChild(d);
 }
 function ventaRows(){return [...document.querySelectorAll('#vrows .vrow')].map(r=>({ml:+(r.querySelector('input[type=radio]:checked')?.value||0),nombre:r.querySelector('.ac').value,cant:+r.querySelector('input[type=number]').value||0}))}
@@ -383,14 +385,15 @@ function saveVenta(e,vid){
   if(!rows.length)return formErr('Agrega al menos un perfume.');
   const items=[];
   for(const [i,r] of rows.entries()){
-    const p=perfByName(r.nombre),n=rows.length>1?` (perfume ${i+1})`:'';
+    const vacio=!r.nombre.trim(),p=vacio?null:perfByName(r.nombre),n=rows.length>1?` (perfume ${i+1})`:'';
     if(!r.ml)return formErr('Elige el tamaño'+n+'.');
-    if(!p)return formErr('Elige un perfume de la lista que aparece al escribir'+n+'.');
+    if(!vacio&&!p)return formErr('Ese perfume no está en la lista. Elígelo de la lista o déjalo vacío'+n+'.');
     if(r.cant<1)return formErr('La cantidad debe ser al menos 1'+n+'.');
-    items.push({pid:p.id,ml:r.ml,cant:r.cant,precio:pubPrice(r.ml)});
+    items.push({pid:p?p.id:'',ml:r.ml,cant:r.cant,precio:pubPrice(r.ml)});
   }
-  const ms=enMano(vid),need={};
-  items.forEach(i=>need[i.pid+'|'+i.ml]=(need[i.pid+'|'+i.ml]||0)+i.cant);
+  const ms=enMano(vid),need={},needMl={};
+  items.forEach(i=>{needMl[i.ml]=(needMl[i.ml]||0)+i.cant;if(i.pid)need[i.pid+'|'+i.ml]=(need[i.pid+'|'+i.ml]||0)+i.cant});
+  for(const ml in needMl){const hay=poolMano(vid,ml);if(hay<needMl[ml])return formErr(hay>0?`Solo tienes ${hay} frasco(s) de ${ml} ml (intentas vender ${needMl[ml]}).`:`No tienes frascos de ${ml} ml asignados. Pídele al dueño que te los entregue primero.`)}
   for(const k in need){const[p,ml]=k.split('|'),hay=ms[k]||0;
     if(hay<need[k])return formErr(hay?`Solo tienes ${hay} de ${pname(p)} ${ml} ml (intentas vender ${need[k]}).`:`No tienes ${pname(p)} de ${ml} ml asignado. Pídele al dueño que te lo entregue primero.`)}
   const total=items.reduce((a,i)=>a+i.cant*i.precio,0),debe=+f.get('debe')||0;
