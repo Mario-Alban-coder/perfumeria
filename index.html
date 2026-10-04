@@ -319,26 +319,26 @@ const ventaNum=x=>x.num?'#'+String(x.num).padStart(4,'0'):'#…';
 function ventaCard(x){
   const s=x.total-ventaPagado(x);
   return `<div class="vcard" onclick="verVenta('${x.id}')"><div class="t1"><span>${esc(x.cliente)}</span><span>${money(x.total)}</span></div>
-  <div class="t2">${x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · ')}</div>
+  <div class="t2">${x.items.length?x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · '):'Deuda anterior (sin detalle de perfumes)'}</div>
   <div class="t3"><span>${fmtFecha(x.fecha)}</span>${s>0?`<span class="tag bad">debe ${money(s)}</span>`:'<span class="tag ok">pagado</span>'}</div></div>`;
 }
 function verVenta(id){
   const x=db.ventas.find(v=>v.id===id);if(!x)return;const pag=ventaPagado(x),s=x.total-pag;
-  openDlg(`<div class="rcpt"><h2>Comprobante de venta ${ventaNum(x)}</h2>
+  openDlg(`<div class="rcpt"><h2>${x.items.length?'Comprobante de venta':'Deuda anterior'} ${ventaNum(x)}</h2>
   <div class="meta">${fmtFecha(x.fecha)}<br>Vendedor: ${esc(vend(x.vid)?.nombre)} · Cliente: <b>${esc(x.cliente)}</b></div>
-  ${x.items.map(i=>`<div class="li"><div>${esc(pname(i.pid))}<small>${i.cant} × ${i.ml} ml · ${money(i.precio)} c/u</small></div><b>${money(i.cant*i.precio)}</b></div>`).join('')}
+  ${x.items.length?x.items.map(i=>`<div class="li"><div>${esc(pname(i.pid))}<small>${i.cant} × ${i.ml} ml · ${money(i.precio)} c/u</small></div><b>${money(i.cant*i.precio)}</b></div>`).join(''):'<div class="li"><div>Deuda registrada sin detalle de perfumes<small>Venta hecha antes de usar la app</small></div><b>'+money(x.total)+'</b></div>'}
   <div class="sum big"><span>Total</span><span>${money(x.total)}</span></div>
   <div class="sum"><span>Pagado</span><span class="ok">${money(pag)}</span></div>
   <div class="sum"><span>Saldo pendiente</span><b class="${s>0?'bad':'ok'}">${money(s)}</b></div>
   ${x.abonos.length?`<h3>Pagos recibidos</h3>${x.abonos.map(a=>`<div class="sum"><span>${fmtFecha(a.fecha)}</span><span>${money(a.monto)}</span></div>`).join('')}`:''}
-  <div class="actions" style="justify-content:space-between"><button class="btn del" onclick="dlg.close();delVenta('${x.id}')">Anular venta</button>
+  <div class="actions" style="justify-content:space-between"><button class="btn del" onclick="dlg.close();delVenta('${x.id}')">${x.items.length?'Anular venta':'Eliminar deuda'}</button>
   <span style="display:flex;gap:8px">${s>0?`<button class="btn pri" onclick="dlg.close();formAbono('${x.vid}','${esc(x.cliente.trim().toLowerCase()).replace(/'/g,"\\'")}')">Registrar abono</button>`:''}<button class="btn" onclick="dlg.close()">Cerrar</button></span></div></div>`);
 }
 function verCliente(vid,key){
   const vs=db.ventas.filter(x=>x.vid===vid&&x.cliente.trim().toLowerCase()===key).sort((a,b)=>b.fecha.localeCompare(a.fecha));if(!vs.length)return;
   const deuda=vs.reduce((a,x)=>a+x.total-ventaPagado(x),0);
   openDlg(`<div class="rcpt"><h2>${esc(vs[0].cliente)}</h2><div class="meta">${vs.length} compra(s) · Debe <b class="${deuda>0?'bad':'ok'}">${money(deuda)}</b></div>
-  ${vs.map(x=>{const s=x.total-ventaPagado(x);return `<div class="vcard" onclick="verVenta('${x.id}')"><div class="t1"><span>${fmtFecha(x.fecha)}</span><span>${money(x.total)}</span></div><div class="t2">${x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · ')}</div><div class="t3"><span></span>${s>0?`<span class="tag bad">debe ${money(s)}</span>`:'<span class="tag ok">pagado</span>'}</div></div>`}).join('')}
+  ${vs.map(x=>{const s=x.total-ventaPagado(x);return `<div class="vcard" onclick="verVenta('${x.id}')"><div class="t1"><span>${fmtFecha(x.fecha)}</span><span>${money(x.total)}</span></div><div class="t2">${x.items.length?x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · '):'Deuda anterior (sin detalle de perfumes)'}</div><div class="t3"><span></span>${s>0?`<span class="tag bad">debe ${money(s)}</span>`:'<span class="tag ok">pagado</span>'}</div></div>`}).join('')}
   <div class="actions">${deuda>0?`<button class="btn pri" onclick="dlg.close();formAbono('${vid}','${esc(key).replace(/'/g,"\\'")}')">Registrar abono</button>`:''}<button class="btn" onclick="dlg.close()">Cerrar</button></div></div>`);
 }
 function ventasView(vid){
@@ -407,9 +407,34 @@ const rowsItems=()=>[...document.querySelectorAll('#items .item')].map(r=>({pid:
 const totalVenta=()=>rowsItems().reduce((a,i)=>a+i.cant*i.precio,0);
 function calc(){const t=$('#tot');if(t)t.value=money(totalVenta())}
 function delVenta(id){ask('¿Eliminar esta venta?',()=>{db.ventas=db.ventas.filter(x=>x.id!==id);save();render()})}
+function parseDeudas(t){
+  return t.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^(.*?)[\s:$-]*\$?\s*([\d.,]+)\s*$/),nombre=m&&m[1].trim().replace(/\s+/g,' '),monto=m&&parseInt(m[2].replace(/[.,]/g,''),10);
+    if(!m||!nombre||!monto)return{l,err:true};
+    return{nombre:nombre.replace(/(^|\s)(\S)/g,(a,b,c)=>b+c.toUpperCase()),monto};
+  });
+}
+function formDeudas(vid){
+  openDlg(`<h2>Cargar deudas anteriores</h2><p class="mute" style="margin-top:0">Vendedor: <b>${esc(vend(vid).nombre)}</b>. Pega una persona por línea, con su nombre y lo que debe (ej. <code>Neymar 40.000</code>). Se registran con la fecha de hoy y sin detalle de perfumes.</p>
+  <form onsubmit="saveDeudas(event,'${vid}')"><textarea id="dtxt" rows="9" placeholder="Neymar 40.000&#10;Canoa 60.000" oninput="prevDeudas()"></textarea><div id="dprev" style="margin:10px 0"></div><p id="err" class="bad"></p>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar deudas</button></div></form>`,vid);
+}
+function prevDeudas(){
+  const l=parseDeudas($('#dtxt').value),ok=l.filter(x=>!x.err),mal=l.filter(x=>x.err);
+  $('#dprev').innerHTML=l.length?`<div class="mute">${ok.length} deuda(s) · Total <b>${money(ok.reduce((a,x)=>a+x.monto,0))}</b></div>`+ok.map(x=>`<div class="row" style="margin:2px 0"><span class="sp">${esc(x.nombre)}</span><b>${money(x.monto)}</b></div>`).join('')+mal.map(x=>`<div class="bad">No entendí: «${esc(x.l)}»</div>`).join(''):'';
+}
+function saveDeudas(e,vid){
+  e.preventDefault();const l=parseDeudas($('#dtxt').value),ok=l.filter(x=>!x.err);
+  if(!ok.length)return formErr('Escribe al menos una línea con nombre y monto.');
+  if(l.some(x=>x.err))return formErr('Hay líneas que no entendí. Corrígelas o bórralas.');
+  const f=new Date().toISOString();
+  ok.forEach(x=>db.ventas.push({id:uid(),vid,fecha:f,cliente:x.nombre,items:[],total:x.monto,abonos:[]}));
+  save();dlg.close();render();toast(ok.length+' deudas registradas');
+}
 function clientesView(vid){
   const cb=porCobrar(vid);const tot=cb.reduce((a,c)=>a+c.saldo,0);
   return `<div class="card kpi"><small>Total que te deben</small><b>${money(tot)}</b></div>
+  <div class="row"><button class="btn" onclick="formDeudas('${vid}')">＋ Cargar deudas anteriores</button></div>
   <div class="card tw">${cb.length?`<table><tr><th>Cliente</th><th class="n">Debe</th><th></th></tr>${cb.map(c=>`<tr><td style="cursor:pointer" onclick="verCliente('${vid}','${esc(c.nombre.toLowerCase()).replace(/'/g,"\\'")}')"><span style="color:var(--brand)">${esc(c.nombre)}</span><div class="mute" style="font-size:12px">${c.ventas.map(x=>fdate(x.fecha)).join(', ')}</div></td><td class="n"><b>${money(c.saldo)}</b></td><td class="n"><button class="btn" onclick="formAbono('${vid}','${esc(c.nombre.toLowerCase()).replace(/'/g,"\\'")}')">Abonar</button></td></tr>`).join('')}</table>`:'<div class="empty">Nadie te debe 🎉</div>'}</div>`;
 }
 function formAbono(vid,key){
@@ -427,7 +452,7 @@ function saveAbono(e,vid,key){
 function periodoSel(){return `<select onchange="S.periodo=this.value;render()"><option value="todo">Todo el tiempo</option>${quincenas().map(q=>`<option value="${q.k}" ${S.periodo===q.k?'selected':''}>${q.label}</option>`).join('')}</select>`}
 function resumen(){
   const vs=db.vendedores.filter(v=>!v.admin);
-  const vp=db.ventas.filter(x=>enPeriodo(x.fecha));
+  const vp=db.ventas.filter(x=>x.items.length&&enPeriodo(x.fecha));
   const cnt={};vp.forEach(x=>x.items.forEach(i=>cnt[i.pid]=(cnt[i.pid]||0)+i.cant));
   const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const deben=vs.reduce((a,v)=>a+debeAlDueno(v.id).saldo,0);
@@ -471,7 +496,7 @@ function vendedorAdmin(){
   const pagos=db.pagos.filter(p=>p.vid===S.vid).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   return solicitudesCard()+`<div class="row"><select onchange="S.vid=this.value;render()">${vs.map(x=>`<option value="${x.id}" ${x.id===S.vid?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select>
   <button class="btn" onclick="formVendedor()">+ Nuevo vendedor</button><button class="btn" onclick="formVendedor('${S.vid}')">Editar</button><div class="sp"></div>
-  <button class="btn pri" onclick="formPago('${S.vid}')">Registrar pago recibido</button></div>
+  <button class="btn" onclick="formDeudas('${S.vid}')">Cargar deudas anteriores</button><button class="btn pri" onclick="formPago('${S.vid}')">Registrar pago recibido</button></div>
   ${miCuenta(S.vid)}
   <div class="card tw"><h2>Pagos entregados al dueño · saldo ${money(d.saldo)}</h2>${pagos.length?`<table>${pagos.map(p=>`<tr><td>${fdate(p.fecha)}</td><td class="n">${money(p.monto)}</td><td class="mute">${esc(p.nota||'')}</td><td><button class="link del" onclick="delPago('${p.id}')">✕</button></td></tr>`).join('')}</table>`:'<div class="empty">Sin pagos.</div>'}</div>
   <div class="card tw"><h2>Clientes que le deben</h2>${porCobrar(S.vid).map(c=>`<div>${esc(c.nombre)}: <b>${money(c.saldo)}</b></div>`).join('')||'<div class="empty">Nadie.</div>'}</div>`;
