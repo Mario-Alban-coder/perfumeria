@@ -102,7 +102,7 @@ const fdate=d=>new Date(d).toLocaleDateString('es-CO',{day:'2-digit',month:'shor
 const SB=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const S={user:null,vid:null,tab:'inicio',periodo:'todo',q:'',ft:''};
 let db=vacio();
-function vacio(){return{tamanos:[{ml:30,precio:20000},{ml:50,precio:40000},{ml:100,precio:65000}],esencias:{clasica:{onza:0,g100:0},premium:{onza:0,g100:0}},perfumes:[],vendedores:[],entregas:[],ventas:[],pagos:[]}}
+function vacio(){return{tamanos:[{ml:30,precio:20000},{ml:50,precio:40000},{ml:100,precio:65000}],esencias:{clasica:{onza:0,g100:0},premium:{onza:0,g100:0}},perfumes:[],vendedores:[],entregas:[],ventas:[],pagos:[],solicitudes:[]}}
 
 /* ---------- avisos ---------- */
 function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3500)}
@@ -114,12 +114,12 @@ function ask(msg,ok){const d=$('#dlg2');d.innerHTML=`<p style="margin-top:0">${e
    La app trabaja sobre `db` en memoria; save() compara contra lo último que
    hay en el servidor y envía solo lo que cambió. Si el servidor rechaza algo
    (p. ej. vender sin stock) se muestra el motivo y se recarga lo real. */
-const COLS=[['profiles','vendedores'],['perfumes','perfumes'],['entregas','entregas'],['ventas','ventas'],['pagos','pagos']];
+const COLS=[['profiles','vendedores'],['perfumes','perfumes'],['entregas','entregas'],['ventas','ventas'],['pagos','pagos'],['solicitudes','solicitudes']];
 let snap={},snapCfg='',syncing=false,again=false;
 const iso=d=>new Date(d).toISOString();
 async function fetchAll(t){const out=[];for(let from=0;;from+=1000){const{data,error}=await SB.from(t).select('*').range(from,from+999);if(error)throw error;out.push(...data);if(data.length<1000)break}return out}
 async function cargarTodo(){
-  const[cfg,...res]=await Promise.all([SB.from('config').select('*').eq('id',1).single(),...COLS.map(([t])=>fetchAll(t))]);
+  const[cfg,...res]=await Promise.all([SB.from('config').select('*').eq('id',1).single(),...COLS.map(([t])=>t==='solicitudes'?fetchAll(t).catch(()=>[]):fetchAll(t))]);
   if(cfg.error)throw cfg.error;
   db.tamanos=cfg.data.tamanos;db.esencias=cfg.data.esencias;
   COLS.forEach(([,k],i)=>{db[k]=res[i].map(r=>{if(r.fecha)r.fecha=iso(r.fecha);return r})});
@@ -166,7 +166,9 @@ async function arrancar(){
   $('#app').innerHTML='<div class="empty">Cargando…</div>';
   const{data:{session}}=await SB.auth.getSession();if(!session){S.user=null;return render()}
   const{data:yo}=await SB.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
-  if(!yo){await SB.auth.signOut();S.user=null;render();return formErr('Tu usuario aún no está registrado. Pídele al dueño que te agregue.')}
+  if(!yo){const{data:pend}=await SB.from('solicitudes').select('id').eq('id',session.user.id).maybeSingle();
+    await SB.auth.signOut();S.user=null;render();
+    return formErr(pend?'Tu solicitud está pendiente: el dueño aún no te ha aprobado.':'Tu usuario no está registrado. Pídele al dueño que te agregue.')}
   try{await cargarTodo()}catch(e){await SB.auth.signOut();S.user=null;render();return formErr('No se pudo cargar: '+(e.message||'revisa tu conexión'))}
   S.user=db.vendedores.find(v=>v.id===yo.id);S.tab='inicio';render();
 }
@@ -253,11 +255,32 @@ function loginView(){
   return `<div class="login card"><h1 style="font-size:24px">🌸 Perfumeria MV</h1><p class="mute">Inicia sesión</p>
   <form onsubmit="login(event)"><input name="u" placeholder="Usuario" required autocapitalize="none" autocomplete="username" style="margin-bottom:10px">
   <input name="p" type="password" placeholder="Contraseña" required autocomplete="current-password" style="margin-bottom:10px"><p id="err" class="bad" style="margin:0 0 8px"></p><button class="btn pri" style="width:100%">Entrar</button></form>
+  <div class="mute" style="margin-top:16px;font-size:14px">¿Eres vendedor y aún no tienes usuario?</div>
+  <button class="btn" style="width:100%;margin-top:8px" onclick="registroView()">Crear mi usuario</button>
   <div id="primera"></div></div>`;
 }
 async function mostrarLogin(){ // ofrece la configuración inicial solo si todavía no existe ningún usuario
   const{data}=await SB.rpc('hay_perfiles');
   if(data===false&&$('#primera'))$('#primera').innerHTML='<button class="link" style="margin-top:12px" onclick="setupView()">Primera vez: crear cuenta del dueño</button>';
+}
+function registroView(){
+  $('#app').innerHTML=`<div class="login card"><h1 style="font-size:22px">Crear mi usuario</h1>
+  <ol class="mute" style="text-align:left;font-size:14px;padding-left:20px;margin:8px 0 14px"><li>Escribe tu nombre, elige un usuario y una contraseña.</li><li>Toca <b>Enviar solicitud</b>.</li><li>Avísale al dueño: cuando te apruebe, ya puedes entrar.</li></ol>
+  <form onsubmit="registrarse(event)"><input name="n" placeholder="Tu nombre (ej. Carlos Mario)" required style="margin-bottom:10px">
+  <input name="u" placeholder="Usuario (ej. carlosmario, sin espacios)" required autocapitalize="none" style="margin-bottom:10px">
+  <input name="p" type="password" minlength="6" placeholder="Contraseña (mínimo 6)" required autocomplete="new-password" style="margin-bottom:10px"><p id="err" class="bad" style="margin:0 0 8px"></p>
+  <button class="btn pri" style="width:100%">Enviar solicitud</button></form><button class="link" style="margin-top:10px" onclick="render()">Volver</button></div>`;
+}
+async function registrarse(e){
+  e.preventDefault();const f=new FormData(e.target),b=e.target.querySelector('button');b.disabled=true;
+  const usuario=f.get('u').trim().toLowerCase();
+  const{data,error}=await SB.auth.signUp({email:emailDe(usuario),password:f.get('p')});
+  if(error||!data.user||!data.user.identities?.length){b.disabled=false;return formErr(error&&!/registered|exists/i.test(error.message)?error.message:'Ese usuario ya existe. Elige otro.')}
+  if(!data.session){b.disabled=false;return formErr('El registro está desactivado. Avísale al dueño.')}
+  const r=await SB.from('solicitudes').insert({id:data.user.id,nombre:f.get('n').trim(),usuario});
+  await SB.auth.signOut();
+  if(r.error){b.disabled=false;return formErr('No se pudo enviar la solicitud: '+r.error.message)}
+  $('#app').innerHTML=`<div class="login card"><h1 style="font-size:22px">¡Solicitud enviada!</h1><p class="mute">Avísale al dueño que ya te registraste. Cuando te apruebe podrás entrar con el usuario <b>${esc(usuario)}</b> y tu contraseña.</p><button class="btn pri" style="width:100%" onclick="render()">Ir a iniciar sesión</button></div>`;
 }
 function setupView(){
   $('#app').innerHTML=`<div class="login card"><h1 style="font-size:22px">Cuenta del dueño</h1><p class="mute">Se crea una sola vez.</p>
@@ -400,7 +423,7 @@ function resumen(){
   const cobrar=vs.reduce((a,v)=>a+porCobrar(v.id).reduce((b,c)=>b+c.saldo,0),0);
   const mano=vs.reduce((a,v)=>a+totalMano(v.id),0);
   const bod=db.perfumes.reduce((a,p)=>a+(p.bodega||0),0);
-  return `<div class="row"><h2 style="margin:0">Resumen</h2><div class="sp"></div>${periodoSel()}</div>
+  return solicitudesCard()+`<div class="row"><h2 style="margin:0">Resumen</h2><div class="sp"></div>${periodoSel()}</div>
   <div class="grid"><div class="card kpi"><small>Vendidas en el periodo</small><b>${vp.reduce((a,x)=>a+x.items.reduce((b,i)=>b+i.cant,0),0)}</b><small>${money(vp.reduce((a,x)=>a+x.total,0))}</small></div>
   <div class="card kpi"><small>Vendedores te deben</small><b class="${deben>0?'bad':''}">${money(deben)}</b></div>
   <div class="card kpi"><small>Clientes deben a vendedores</small><b>${money(cobrar)}</b></div>
@@ -410,11 +433,32 @@ function resumen(){
   return `<tr><td>${esc(v.nombre)}</td><td class="n">${totalMano(v.id)}</td><td class="n">${vu}</td><td class="n"><b class="${d.saldo>0?'bad':''}">${money(d.saldo)}</b></td><td class="n">${money(porCobrar(v.id).reduce((a,c)=>a+c.saldo,0))}</td><td class="n"><button class="link" onclick="S.vid='${v.id}';S.tab='vendedor';render()">Ver</button></td></tr>`}).join('')}</table></div>
   <div class="card tw"><h2>🏆 Referencias más vendidas</h2>${top.length?`<table>${top.map(([id,n])=>`<tr><td>${esc(pname(id))}</td><td class="n">${n} uds</td></tr>`).join('')}</table>`:'<div class="empty">Aún no hay ventas por referencia.</div>'}</div>`;
 }
+function solicitudesCard(){
+  const l=db.solicitudes;if(!l.length)return '';
+  return `<div class="card" style="border-color:var(--brand)"><h2>🔔 Solicitudes de registro (${l.length})</h2>
+  ${l.map(x=>`<div class="row" style="margin-bottom:8px"><div class="sp"><b>${esc(x.nombre)}</b><div class="mute" style="font-size:13px">usuario: ${esc(x.usuario)} · ${fmtFecha(x.fecha)}</div></div>
+  <button class="btn pri" onclick="aprobar('${x.id}')">Aprobar</button><button class="btn del" onclick="rechazar('${x.id}')">Rechazar</button></div>`).join('')}</div>`;
+}
+function aprobar(id){
+  const x=db.solicitudes.find(s=>s.id===id);if(!x)return;
+  openDlg(`<h2>Aprobar a ${esc(x.nombre)}</h2><form onsubmit="saveAprobar(event,'${id}')"><div class="f">
+  <div class="full"><label>Nombre</label><input name="nombre" required value="${esc(x.nombre)}"></div>
+  <div class="full mute">Precio que paga al dueño por unidad (vacío = precio público, es decir sin comisión)</div>
+  ${db.tamanos.map(t=>`<div><label>${t.ml} ml (público ${money(t.precio)})</label><input name="p${t.ml}" type="number" min="0"></div>`).join('')}</div>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Aprobar</button></div></form>`);
+}
+function saveAprobar(e,id){
+  e.preventDefault();const f=new FormData(e.target),precios={};db.tamanos.forEach(t=>{const v=f.get('p'+t.ml);if(v!=='')precios[t.ml]=+v});
+  db.vendedores.push({id,nombre:f.get('nombre').trim(),admin:false,precios});db.solicitudes=db.solicitudes.filter(s=>s.id!==id);S.vid=id;
+  save();dlg.close();render();toast('Vendedor aprobado');
+}
+function rechazar(id){ask('¿Rechazar esta solicitud?',()=>{db.solicitudes=db.solicitudes.filter(s=>s.id!==id);save();render()})}
 function vendedorAdmin(){
+  if(!db.vendedores.some(v=>!v.admin))return solicitudesCard()+`<div class="row"><button class="btn pri" onclick="formVendedor()">+ Nuevo vendedor</button></div><div class="card empty">Aún no hay vendedores. Créalos aquí o pídeles que usen «Crear mi usuario» en la pantalla de inicio.</div>`;
   const vs=db.vendedores.filter(v=>!v.admin);S.vid=S.vid&&vend(S.vid)?S.vid:vs[0]?.id;
   const v=vend(S.vid);const d=debeAlDueno(S.vid);
   const pagos=db.pagos.filter(p=>p.vid===S.vid).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  return `<div class="row"><select onchange="S.vid=this.value;render()">${vs.map(x=>`<option value="${x.id}" ${x.id===S.vid?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select>
+  return solicitudesCard()+`<div class="row"><select onchange="S.vid=this.value;render()">${vs.map(x=>`<option value="${x.id}" ${x.id===S.vid?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select>
   <button class="btn" onclick="formVendedor()">+ Nuevo vendedor</button><button class="btn" onclick="formVendedor('${S.vid}')">Editar</button><div class="sp"></div>
   <button class="btn pri" onclick="formPago('${S.vid}')">Registrar pago recibido</button></div>
   ${miCuenta(S.vid)}
