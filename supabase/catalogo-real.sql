@@ -1,0 +1,61 @@
+-- Reemplaza el catálogo por la lista real. Conserva solo las referencias que ya tengan
+-- entregas o ventas registradas (para no romper el historial).
+delete from public.perfumes p
+where not exists (select 1 from public.entregas e, jsonb_array_elements(e.items) x where x->>'pid' = p.id::text)
+  and not exists (select 1 from public.ventas   v, jsonb_array_elements(v.items) x where x->>'pid' = p.id::text);
+
+insert into public.perfumes (nombre, genero, tipo, bodega)
+select v.nombre, v.genero, v.tipo, v.bodega from (values
+  ('Solo', '', 'clasica', 0),
+  ('Ohm', 'Hombre', 'clasica', 2),
+  ('Yum Yum', 'Hombre', 'premium', 3),
+  ('9pm Elixir', '', 'clasica', 1),
+  ('9pm Rebel', 'Hombre', 'premium', 3),
+  ('Arabians Tonka', 'Hombre', 'premium', 2),
+  ('212 Vip Men', 'Hombre', 'clasica', 1),
+  ('212 Vip Black Men', 'Hombre', 'clasica', 1),
+  ('Jean Paul Elixir', 'Hombre', 'clasica', 1),
+  ('Jean Paul Le Male', '', 'clasica', 0),
+  ('Bond Signature', '', 'clasica', 0),
+  ('Bond Bleecker Street', '', 'clasica', 0),
+  ('Amber Royal', '', 'clasica', 2),
+  ('Amber Pis Aqua Dubai', '', 'clasica', 0),
+  ('Creed Irish Tweed', '', 'clasica', 0),
+  ('Creed Adventus', '', 'clasica', 0),
+  ('Creed Silver', 'Unisex', 'clasica', 2),
+  ('Tommy Men', 'Hombre', 'clasica', 2),
+  ('360 Men', 'Hombre', 'clasica', 3),
+  ('360 Fem', 'Mujer', 'clasica', 0),
+  ('Khamrah', '', 'clasica', 2),
+  ('Khamrah Dukhan', '', 'clasica', 0),
+  ('Khamrah Qahwa', '', 'clasica', 0),
+  ('Messi', '', 'clasica', 0),
+  ('Lacoste Blue', '', 'clasica', 2),
+  ('Paris Hilton Fem', 'Mujer', 'clasica', 5),
+  ('La Vida Es Bella', '', 'clasica', 0),
+  ('Korbaj Tóxico Desire', '', 'clasica', 0),
+  ('Bharara King', '', 'clasica', 0),
+  ('Dubai Night', '', 'clasica', 0),
+  ('Hawas Malibú', '', 'clasica', 0),
+  ('Hawas Kobra', '', 'clasica', 0),
+  ('Odyssey Candee Fem', 'Mujer', 'clasica', 0),
+  ('Mandarín Sky', '', 'clasica', 2),
+  ('Issey Miyake', '', 'clasica', 0),
+  ('Aqua De Gio', 'Hombre', 'clasica', 3),
+  ('Amber Rouge', 'Unisex', 'clasica', 4),
+  ('Il Rosso', '', 'clasica', 2),
+  ('Oud Saffron', 'Unisex', 'premium', 2),
+  ('Olympea Fem', 'Mujer', 'clasica', 4),
+  ('Ralph Fem', 'Mujer', 'clasica', 1),
+  ('Honor Y Glory', '', 'clasica', 6),
+  ('Valentino Donna Born In Roma', 'Hombre', 'premium', 2),
+  ('Valentino Donna Born In Roma Intense', 'Hombre', 'premium', 2),
+  ('Lacoste Blanca', 'Hombre', 'clasica', 3),
+  ('Sublime', '', 'clasica', 6),
+  ('Valentino Men', '', 'clasica', 0),
+  ('Swiss Army', 'Hombre', 'clasica', 4),
+  ('One Million', 'Hombre', 'clasica', 2),
+  ('Invictus Victory', 'Hombre', 'clasica', 3),
+  ('Ombre Nomade', 'Hombre', 'premium', 3)
+) as v(nombre, genero, tipo, bodega)
+where not exists (select 1 from public.perfumes p where lower(p.nombre) = lower(v.nombre));

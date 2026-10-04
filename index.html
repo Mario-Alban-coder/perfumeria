@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfumería · Vendedores</title>
+<style>
+:root{--bg:#f6f4f1;--card:#fff;--ink:#241f1c;--mute:#7a716a;--line:#e6e0da;--brand:#7a3e65;--brand2:#f1e4ec;--ok:#2f7d4f;--warn:#b7791f;--bad:#b3392f}
+@media (prefers-color-scheme:dark){:root{--bg:#161214;--card:#211b1e;--ink:#f1ebe7;--mute:#a79b94;--line:#352c30;--brand:#d58bbb;--brand2:#3a2633;--ok:#6cc08c;--warn:#e0b25a;--bad:#ef7f74}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{max-width:1000px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
+h1{font-size:17px;margin:0;color:var(--brand)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar div{max-width:1000px;margin:auto;display:flex}
+.tabbar button{flex:1;background:none;border:0;padding:8px 4px 10px;color:var(--mute);font:inherit;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:0}
+.tabbar svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button.on{color:var(--brand);font-weight:600}
+.fab{position:fixed;right:max(16px,calc(50% - 484px));bottom:calc(76px + env(safe-area-inset-bottom));z-index:7;background:var(--brand);color:#fff;border:0;border-radius:99px;padding:14px 22px;font:inherit;font-weight:600;font-size:16px;box-shadow:0 6px 18px #0004;cursor:pointer}
+.hero{width:100%;padding:18px;font-size:18px;font-weight:600;margin-bottom:14px;border-radius:14px}
+#toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:20;display:none}
+.who{color:var(--mute);font-size:14px}
+main{max-width:1000px;margin:auto;padding:16px 16px 150px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.grid .card{margin:0}
+.kpi small{color:var(--mute);display:block}.kpi b{font-size:22px}
+h2{font-size:16px;margin:0 0 10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.sp{flex:1}
+input,select,textarea{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+.row input,.row select{width:auto}
+.row input[type=search]{flex:1;min-width:150px}
+.btn{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.pri{background:var(--brand);color:#fff;border-color:var(--brand)}
+.link{background:none;border:0;color:var(--brand);cursor:pointer;font:inherit;padding:2px 6px}
+.del{color:var(--bad)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:13px}
+.n{text-align:right}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:var(--brand2);color:var(--brand)}
+.tag.bad{background:#f8d9d5;color:var(--bad)}.tag.ok{background:#d9efe2;color:var(--ok)}
+.mute{color:var(--mute)}.empty{padding:20px;text-align:center;color:var(--mute)}
+.bad{color:var(--bad)}.ok{color:var(--ok)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:20px;width:min(560px,94vw)}
+dialog::backdrop{background:#0006}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f label{font-size:13px;color:var(--mute);display:block}
+.full{grid-column:1/-1}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.item{display:grid;grid-template-columns:1fr 64px 100px 28px;gap:6px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.size{border:2px solid var(--line);border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:2px}.size input{display:none}.size b{font-size:20px}.size span{color:var(--mute);font-size:13px}.size:has(input:checked){border-color:var(--brand);background:var(--brand2)}
+.acw{position:relative}
+.aclist{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:8px;max-height:210px;overflow:auto;display:none;box-shadow:0 8px 20px #0004;margin-top:2px}
+.aclist div{padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.aclist div:last-child{border:0}.aclist div:hover{background:var(--brand2)}.aclist small{color:var(--mute)}
+.vrow{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.vrow .sizes{margin-bottom:8px}.vrow .size{padding:8px 4px}.vrow .size b{font-size:16px}
+.vrow .l2{display:grid;grid-template-columns:1fr 70px 28px;gap:6px;align-items:center}
+.item .acw{grid-column:1/-1}
+dialog#dlgp{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;background:color-mix(in srgb,var(--bg) 55%,transparent);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);color:var(--ink)}
+dialog#dlgp::backdrop{background:none}
+.pk-wrap{width:100%;height:100%;display:flex;flex-direction:column;padding:12px 0 0}
+.pk-top{display:flex;gap:8px;padding:0 12px 10px}
+.pk-top input{font-size:17px;padding:13px 14px}
+#pl{flex:1;overflow:auto;background:color-mix(in srgb,var(--card) 88%,transparent);border-top:1px solid var(--line)}
+.pk-row{padding:16px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between;gap:10px;font-size:16px;cursor:pointer}
+.pk-row:active,.pk-row:hover{background:var(--brand2)}.pk-row small{color:var(--mute);flex:none}
+.pk-add{color:var(--brand);font-weight:600}
+.vcard{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}.vcard:last-child{border:0}.vcard:active{background:var(--brand2)}
+.vcard .t1{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.vcard .t2{color:var(--mute);font-size:14px;margin:2px 0}
+.vcard .t3{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mute)}
+.rcpt h2{margin:0}.rcpt .meta{color:var(--mute);font-size:14px;margin:2px 0 12px}
+.rcpt .li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.rcpt .li small{display:block;color:var(--mute)}
+.rcpt .sum{display:flex;justify-content:space-between;padding:6px 0}.rcpt .sum.big{font-size:18px;font-weight:700;border-top:2px solid var(--line);margin-top:6px;padding-top:10px}
+.rcpt h3{font-size:14px;margin:14px 0 4px;color:var(--mute);font-weight:600}
+.login{max-width:380px;margin:12vh auto;text-align:center}
+@media(max-width:560px){.f{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header id="hd"></header>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<dialog id="dlg2"></dialog>
+<dialog id="dlgp"></dialog>
+<div id="toast"></div>
+<div id="nv"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const uid=()=>crypto.randomUUID();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n||0)).toLocaleString('es-CO');
+const fdate=d=>new Date(d).toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+const SB=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const S={user:null,vid:null,tab:'inicio',periodo:'todo',q:'',ft:''};
+let db=vacio();
+function vacio(){return{tamanos:[{ml:30,precio:20000},{ml:50,precio:40000},{ml:100,precio:65000}],esencias:{clasica:{onza:0,g100:0},premium:{onza:0,g100:0}},perfumes:[],vendedores:[],entregas:[],ventas:[],pagos:[]}}
+
+/* ---------- avisos ---------- */
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3500)}
+function formErr(m){const e=$('#err');if(e){e.textContent=m;e.scrollIntoView({block:'nearest'})}else toast(m)}
+function ask(msg,ok){const d=$('#dlg2');d.innerHTML=`<p style="margin-top:0">${esc(msg)}</p><div class="actions"><button class="btn" onclick="dlg2.close()">Cancelar</button><button class="btn pri" id="okb">Aceptar</button></div>`;
+  d.showModal();$('#okb').onclick=()=>{d.close();ok()}}
+
+/* ---------- datos en la nube (Supabase) ----------
+   La app trabaja sobre `db` en memoria; save() compara contra lo último que
+   hay en el servidor y envía solo lo que cambió. Si el servidor rechaza algo
+   (p. ej. vender sin stock) se muestra el motivo y se recarga lo real. */
+const COLS=[['profiles','vendedores'],['perfumes','perfumes'],['entregas','entregas'],['ventas','ventas'],['pagos','pagos']];
+let snap={},snapCfg='',syncing=false,again=false;
+const iso=d=>new Date(d).toISOString();
+async function fetchAll(t){const out=[];for(let from=0;;from+=1000){const{data,error}=await SB.from(t).select('*').range(from,from+999);if(error)throw error;out.push(...data);if(data.length<1000)break}return out}
+async function cargarTodo(){
+  const[cfg,...res]=await Promise.all([SB.from('config').select('*').eq('id',1).single(),...COLS.map(([t])=>fetchAll(t))]);
+  if(cfg.error)throw cfg.error;
+  db.tamanos=cfg.data.tamanos;db.esencias=cfg.data.esencias;
+  COLS.forEach(([,k],i)=>{db[k]=res[i].map(r=>{if(r.fecha)r.fecha=iso(r.fecha);return r})});
+  snapshot();
+}
+function snapshot(){snap={};COLS.forEach(([,k])=>{snap[k]=new Map(db[k].map(r=>[r.id,JSON.stringify(r)]))});snapCfg=JSON.stringify([db.tamanos,db.esencias])}
+async function pushChanges(){
+  const cfg=JSON.stringify([db.tamanos,db.esencias]);
+  if(cfg!==snapCfg){const{error}=await SB.from('config').update({tamanos:db.tamanos,esencias:db.esencias}).eq('id',1);if(error)throw error;snapCfg=cfg}
+  for(const[t,k]of COLS)for(const r of db[k]){
+    const old=snap[k].get(r.id);if(old===JSON.stringify(r))continue;
+    if(old===undefined){const{data,error}=await SB.from(t).insert(r).select().single();if(error)throw error;if(k==='ventas')r.num=data.num}
+    else{const{num,...resto}=r;const{error}=await SB.from(t).update(resto).eq('id',r.id);if(error)throw error}
+    snap[k].set(r.id,JSON.stringify(r));
+  }
+  for(const[t,k]of[...COLS].reverse()){
+    const vivos=new Set(db[k].map(r=>r.id)),del=[...snap[k].keys()].filter(id=>!vivos.has(id));
+    if(del.length){const{error}=await SB.from(t).delete().in('id',del);if(error)throw error;del.forEach(id=>snap[k].delete(id))}
+  }
+}
+function save(){sync()}
+async function sync(){
+  if(syncing){again=true;return}syncing=true;
+  try{do{again=false;await pushChanges()}while(again);if(S.user&&!document.querySelector('dialog[open]'))render()}
+  catch(e){toast(e.message||'No se pudo guardar');try{await cargarTodo();if(S.user)render()}catch{}}
+  finally{syncing=false}
+}
+async function recargar(){
+  if(!S.user||syncing||document.querySelector('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName))return;
+  try{await cargarTodo();render()}catch{}
+}
+setInterval(recargar,20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)recargar()});
+
+/* ---------- acceso ---------- */
+const emailDe=u=>u.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9._-]/g,'')+'@perfumeria.app';
+async function login(e){
+  e.preventDefault();const f=new FormData(e.target),b=e.target.querySelector('button');b.disabled=true;
+  const{error}=await SB.auth.signInWithPassword({email:emailDe(f.get('u')),password:f.get('p')});
+  b.disabled=false;if(error)return formErr('Usuario o contraseña incorrectos.');
+  arrancar();
+}
+async function arrancar(){
+  $('#app').innerHTML='<div class="empty">Cargando…</div>';
+  const{data:{session}}=await SB.auth.getSession();if(!session){S.user=null;return render()}
+  const{data:yo}=await SB.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  if(!yo){await SB.auth.signOut();S.user=null;render();return formErr('Tu usuario aún no está registrado. Pídele al dueño que te agregue.')}
+  try{await cargarTodo()}catch(e){await SB.auth.signOut();S.user=null;render();return formErr('No se pudo cargar: '+(e.message||'revisa tu conexión'))}
+  S.user=db.vendedores.find(v=>v.id===yo.id);S.tab='inicio';render();
+}
+async function salir(){await SB.auth.signOut();S.user=null;db=vacio();render()}
+async function crearDueno(e){
+  e.preventDefault();const f=new FormData(e.target),b=e.target.querySelector('button');b.disabled=true;
+  const{data,error}=await SB.auth.signUp({email:emailDe(f.get('u')),password:f.get('p')});
+  if(error||!data.session){b.disabled=false;return formErr(error?.message||'Desactiva "Confirm email" en Supabase (Authentication → Sign In / Providers → Email).')}
+  const r=await SB.from('profiles').insert({id:data.user.id,nombre:f.get('n').trim(),admin:true,precios:{}});
+  if(r.error){b.disabled=false;await SB.auth.signOut();return formErr('No se pudo crear: '+r.error.message)}
+  arrancar();
+}
+function miPerfil(){
+  openDlg(`<h2>${esc(S.user.nombre)}</h2><p class="mute" style="margin-top:0">Cambiar contraseña</p>
+  <form onsubmit="cambiarClave(event)"><input name="p" type="password" minlength="6" placeholder="Nueva contraseña (mínimo 6)" required autocomplete="new-password"><p id="err" class="bad"></p>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cerrar</button><button class="btn pri">Guardar</button></div></form>`);
+}
+async function cambiarClave(e){e.preventDefault();const{error}=await SB.auth.updateUser({password:new FormData(e.target).get('p')});
+  if(error)return formErr(error.message);dlg.close();toast('Contraseña actualizada')}
+
+const perf=id=>db.perfumes.find(p=>p.id===id);
+const vend=id=>db.vendedores.find(v=>v.id===id);
+const pubPrice=ml=>db.tamanos.find(t=>t.ml==ml)?.precio||0;
+const liqPrice=(v,ml)=>v?.precios?.[ml]??pubPrice(ml);   // lo que el vendedor le debe al dueño por unidad
+const pname=id=>perf(id)?.nombre||'(eliminado)';
+
+/* ---------- cálculos ---------- */
+function enMano(vid){ // stock en poder del vendedor
+  const m={};const add=(p,ml,c)=>{const k=p+'|'+ml;m[k]=(m[k]||0)+c};
+  db.entregas.filter(e=>e.vid===vid).forEach(e=>e.items.forEach(i=>add(i.pid,i.ml,e.tipo==='devolucion'?-i.cant:i.cant)));
+  db.ventas.filter(x=>x.vid===vid).forEach(x=>x.items.forEach(i=>add(i.pid,i.ml,-i.cant)));
+  return m;
+}
+const totalMano=vid=>Object.values(enMano(vid)).reduce((a,b)=>a+b,0);
+const ventaPagado=x=>x.abonos.reduce((a,b)=>a+b.monto,0);
+function debeAlDueno(vid){
+  const v=vend(vid);
+  const vendido=db.ventas.filter(x=>x.vid===vid).reduce((a,x)=>a+x.items.reduce((b,i)=>b+i.cant*liqPrice(v,i.ml),0),0);
+  const pagado=db.pagos.filter(p=>p.vid===vid).reduce((a,p)=>a+p.monto,0);
+  return{vendido,pagado,saldo:vendido-pagado};
+}
+function porCobrar(vid){ // deudas de clientes, agrupadas por nombre
+  const m={};
+  db.ventas.filter(x=>x.vid===vid).forEach(x=>{const s=x.total-ventaPagado(x);if(s>0){const k=x.cliente.trim().toLowerCase();(m[k]??={nombre:x.cliente.trim(),saldo:0,ventas:[]});m[k].saldo+=s;m[k].ventas.push(x)}});
+  return Object.values(m).sort((a,b)=>b.saldo-a.saldo);
+}
+function quincenas(){ // últimas 6
+  const out=[];const d=new Date();let y=d.getFullYear(),m=d.getMonth(),h=d.getDate()<=15?1:2;
+  for(let i=0;i<6;i++){
+    const last=new Date(y,m+1,0).getDate();
+    const a=new Date(y,m,h===1?1:16),b=new Date(y,m,h===1?15:last,23,59,59);
+    out.push({k:`${y}-${m}-${h}`,a,b,label:`${h===1?'1':'16'}–${h===1?'15':last} ${a.toLocaleDateString('es-CO',{month:'short'})}`});
+    if(h===1){h=2;m--;if(m<0){m=11;y--}}else h=1;
+  }return out;
+}
+function enPeriodo(fecha){
+  if(S.periodo==='todo')return true;const q=quincenas().find(q=>q.k===S.periodo);const d=new Date(fecha);return d>=q.a&&d<=q.b;
+}
+
+/* ---------- shell ---------- */
+const ICON={
+ home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+ list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+ debt:'<path d="M12 2v20M17 6H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+ users:'<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8M22 21c0-3-2-5-4-5.5"/>',
+ box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v9"/>',
+ tag:'<path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.3l2-1.5-2-3.4-2.3 1a7 7 0 00-2.2-1.3L14 3h-4l-.4 2.5a7 7 0 00-2.2 1.3l-2.3-1-2 3.4 2 1.5a7 7 0 000 2.6l-2 1.5 2 3.4 2.3-1a7 7 0 002.2 1.3L10 21h4l.4-2.5a7 7 0 002.2-1.3l2.3 1 2-3.4-2-1.5c.1-.4.1-.9.1-1.3z"/>'};
+function render(){
+  if(!S.user){$('#hd').innerHTML='';$('#nv').innerHTML='';$('#app').innerHTML=loginView();return mostrarLogin()}
+  const adm=S.user.admin;
+  const tabs=adm?[['inicio','Resumen','home'],['vendedor','Vendedores','users'],['entregas','Entregas','box'],['catalogo','Catálogo','tag'],['datos','Más','gear']]
+                 :[['inicio','Inicio','home'],['vender','Ventas','list'],['clientes','Deudas','debt']];
+  $('#hd').innerHTML=`<div class="bar"><h1>🌸 Perfumería</h1><span class="sp" style="flex:1"></span><button class="link who" onclick="miPerfil()">${esc(S.user.nombre)}</button><button class="link" onclick="salir()">Salir</button></div>`;
+  $('#nv').innerHTML=`<div class="tabbar"><div>${tabs.map(([k,l,ic])=>`<button class="${k===S.tab?'on':''}" onclick="S.tab='${k}';S.q='';render();scrollTo(0,0)"><svg viewBox="0 0 24 24">${ICON[ic]}</svg>${l}</button>`).join('')}</div></div>`
+    +(adm?'':`<button class="fab" onclick="formVenta('${S.user.id}')">＋ Vender</button>`);
+  const views={
+    inicio:adm?resumen:()=>miCuenta(S.user.id),
+    vendedor:vendedorAdmin,entregas:entregasView,catalogo:catalogo,datos:datos,
+    vender:()=>ventasView(S.user.id),clientes:()=>clientesView(S.user.id)};
+  $('#app').innerHTML=views[S.tab]();
+}
+function loginView(){
+  return `<div class="login card"><h1 style="font-size:24px">🌸 Perfumería</h1><p class="mute">Inicia sesión</p>
+  <form onsubmit="login(event)"><input name="u" placeholder="Usuario" required autocapitalize="none" autocomplete="username" style="margin-bottom:10px">
+  <input name="p" type="password" placeholder="Contraseña" required autocomplete="current-password" style="margin-bottom:10px"><p id="err" class="bad" style="margin:0 0 8px"></p><button class="btn pri" style="width:100%">Entrar</button></form>
+  <div id="primera"></div></div>`;
+}
+async function mostrarLogin(){ // ofrece la configuración inicial solo si todavía no existe ningún usuario
+  const{data}=await SB.rpc('hay_perfiles');
+  if(data===false&&$('#primera'))$('#primera').innerHTML='<button class="link" style="margin-top:12px" onclick="setupView()">Primera vez: crear cuenta del dueño</button>';
+}
+function setupView(){
+  $('#app').innerHTML=`<div class="login card"><h1 style="font-size:22px">Cuenta del dueño</h1><p class="mute">Se crea una sola vez.</p>
+  <form onsubmit="crearDueno(event)"><input name="n" placeholder="Nombre (ej. Mario - Valentina)" required style="margin-bottom:10px">
+  <input name="u" placeholder="Usuario (ej. mario)" required autocapitalize="none" style="margin-bottom:10px">
+  <input name="p" type="password" minlength="6" placeholder="Contraseña (mínimo 6)" required autocomplete="new-password" style="margin-bottom:10px"><p id="err" class="bad" style="margin:0 0 8px"></p>
+  <button class="btn pri" style="width:100%">Crear y entrar</button></form><button class="link" style="margin-top:10px" onclick="render()">Volver</button></div>`;
+}
+
+/* ---------- vistas del vendedor ---------- */
+function miCuenta(vid,hero){
+  const v=vend(vid),d=debeAlDueno(vid),cb=porCobrar(vid),mano=totalMano(vid);
+  const ms=enMano(vid);
+  const rows=Object.entries(ms).filter(([,c])=>c>0).map(([k,c])=>{const[p,ml]=k.split('|');return{p:pname(p),ml,c}}).sort((a,b)=>a.p.localeCompare(b.p));
+  const ult=db.ventas.filter(x=>x.vid===vid).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
+  return `${hero?`<button class="btn pri hero" onclick="formVenta('${vid}')">＋ Registrar venta</button>`:''}<div class="grid">
+   <div class="card kpi"><small>Perfumes en mi poder</small><b>${mano}</b></div>
+   <div class="card kpi"><small>Le debo al dueño</small><b class="${d.saldo>0?'bad':'ok'}">${money(d.saldo)}</b><small>Vendido ${money(d.vendido)} · Pagado ${money(d.pagado)}</small></div>
+   <div class="card kpi"><small>Mis clientes me deben</small><b>${money(cb.reduce((a,c)=>a+c.saldo,0))}</b><small>${cb.length} personas</small></div></div>
+  <div class="card tw"><h2>Mi inventario</h2>${rows.length?`<table><tr><th>Perfume</th><th>Tamaño</th><th class="n">Cantidad</th></tr>${rows.map(r=>`<tr><td>${esc(r.p)}</td><td>${r.ml} ml</td><td class="n">${r.c}</td></tr>`).join('')}</table>`:'<div class="empty">No tienes perfumes asignados.</div>'}</div>
+  <div class="card"><h2>Mis últimas ventas</h2>${ult.length?ult.map(ventaCard).join(''):'<div class="empty">Sin ventas aún.</div>'}</div>`;
+}
+const fmtFecha=d=>new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})+' · '+new Date(d).toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'});
+const ventaNum=x=>x.num?'#'+String(x.num).padStart(4,'0'):'#…';
+function ventaCard(x){
+  const s=x.total-ventaPagado(x);
+  return `<div class="vcard" onclick="verVenta('${x.id}')"><div class="t1"><span>${esc(x.cliente)}</span><span>${money(x.total)}</span></div>
+  <div class="t2">${x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · ')}</div>
+  <div class="t3"><span>${fmtFecha(x.fecha)}</span>${s>0?`<span class="tag bad">debe ${money(s)}</span>`:'<span class="tag ok">pagado</span>'}</div></div>`;
+}
+function verVenta(id){
+  const x=db.ventas.find(v=>v.id===id);if(!x)return;const pag=ventaPagado(x),s=x.total-pag;
+  openDlg(`<div class="rcpt"><h2>Comprobante de venta ${ventaNum(x)}</h2>
+  <div class="meta">${fmtFecha(x.fecha)}<br>Vendedor: ${esc(vend(x.vid)?.nombre)} · Cliente: <b>${esc(x.cliente)}</b></div>
+  ${x.items.map(i=>`<div class="li"><div>${esc(pname(i.pid))}<small>${i.cant} × ${i.ml} ml · ${money(i.precio)} c/u</small></div><b>${money(i.cant*i.precio)}</b></div>`).join('')}
+  <div class="sum big"><span>Total</span><span>${money(x.total)}</span></div>
+  <div class="sum"><span>Pagado</span><span class="ok">${money(pag)}</span></div>
+  <div class="sum"><span>Saldo pendiente</span><b class="${s>0?'bad':'ok'}">${money(s)}</b></div>
+  ${x.abonos.length?`<h3>Pagos recibidos</h3>${x.abonos.map(a=>`<div class="sum"><span>${fmtFecha(a.fecha)}</span><span>${money(a.monto)}</span></div>`).join('')}`:''}
+  <div class="actions" style="justify-content:space-between"><button class="btn del" onclick="dlg.close();delVenta('${x.id}')">Anular venta</button>
+  <span style="display:flex;gap:8px">${s>0?`<button class="btn pri" onclick="dlg.close();formAbono('${x.vid}','${esc(x.cliente.trim().toLowerCase()).replace(/'/g,"\\'")}')">Registrar abono</button>`:''}<button class="btn" onclick="dlg.close()">Cerrar</button></span></div></div>`);
+}
+function verCliente(vid,key){
+  const vs=db.ventas.filter(x=>x.vid===vid&&x.cliente.trim().toLowerCase()===key).sort((a,b)=>b.fecha.localeCompare(a.fecha));if(!vs.length)return;
+  const deuda=vs.reduce((a,x)=>a+x.total-ventaPagado(x),0);
+  openDlg(`<div class="rcpt"><h2>${esc(vs[0].cliente)}</h2><div class="meta">${vs.length} compra(s) · Debe <b class="${deuda>0?'bad':'ok'}">${money(deuda)}</b></div>
+  ${vs.map(x=>{const s=x.total-ventaPagado(x);return `<div class="vcard" onclick="verVenta('${x.id}')"><div class="t1"><span>${fmtFecha(x.fecha)}</span><span>${money(x.total)}</span></div><div class="t2">${x.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}ml`).join(' · ')}</div><div class="t3"><span></span>${s>0?`<span class="tag bad">debe ${money(s)}</span>`:'<span class="tag ok">pagado</span>'}</div></div>`}).join('')}
+  <div class="actions">${deuda>0?`<button class="btn pri" onclick="dlg.close();formAbono('${vid}','${esc(key).replace(/'/g,"\\'")}')">Registrar abono</button>`:''}<button class="btn" onclick="dlg.close()">Cerrar</button></div></div>`);
+}
+function ventasView(vid){
+  const l=db.ventas.filter(x=>x.vid===vid&&(x.cliente+x.items.map(i=>pname(i.pid)).join()).toLowerCase().includes(S.q.toLowerCase())).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return `<div class="row"><input type="search" placeholder="Buscar cliente o perfume…" value="${esc(S.q)}" oninput="S.q=this.value;$('#lv').innerHTML=ventasTabla('${vid}')"><button class="btn pri" onclick="formVenta('${vid}')">+ Registrar venta</button></div>
+  <div class="card" id="lv">${ventasTabla(vid)}</div>`;
+}
+function ventasTabla(vid){
+  const l=db.ventas.filter(x=>x.vid===vid&&(x.cliente+x.items.map(i=>pname(i.pid)).join()).toLowerCase().includes(S.q.toLowerCase())).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return l.length?l.map(ventaCard).join(''):'<div class="empty">Sin ventas.</div>';
+}
+let vrowN=0;
+function formVenta(vid){
+  const sin=!Object.values(enMano(vid)).some(c=>c>0);
+  if(sin)return openDlg(`<h2>Registrar venta</h2><p>No tienes perfumes asignados todavía. El dueño debe registrarte una <b>entrega</b> antes de que puedas vender.</p><div class="actions"><button class="btn pri" onclick="dlg.close()">Entendido</button></div>`);
+  openDlg(`<h2>Registrar venta</h2><form onsubmit="saveVenta(event,'${vid}')">
+  <div id="vrows"></div>
+  <button type="button" class="btn" style="width:100%" onclick="addVRow()">＋ Agregar otro perfume</button>
+  <div class="f" style="margin-top:14px">
+   <div class="full"><label>Nombre del cliente</label>${acInput('name="cliente" required','cli')}</div>
+   <div class="full"><label>¿Cuánto debe? (0 si pagó todo)</label><input name="debe" id="debe" type="number" min="0" value="0" required oninput="calc2()"></div></div>
+  <div class="row" style="margin-top:8px"><button type="button" class="link" onclick="$('#debe').value=ventaTotal();calc2()">Debe todo</button><span class="sp"></span><b id="res"></b></div>
+  <p id="err" class="bad" style="margin:4px 0 0"></p>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`,vid);
+  addVRow();
+}
+function addVRow(){
+  const n=++vrowN,d=document.createElement('div');d.className='vrow';
+  d.innerHTML=`<div class="sizes">${db.tamanos.map(t=>`<label class="size"><input type="radio" name="ml${n}" value="${t.ml}" onchange="calc2()"><b>${t.ml} ml</b><span>${money(t.precio)}</span></label>`).join('')}</div>
+  <div class="l2">${acInput('placeholder="Perfume (escribe para buscar)"')}<input type="number" min="1" value="1" oninput="calc2()"><button type="button" class="link del" onclick="this.closest('.vrow').remove();calc2()">✕</button></div>`;
+  $('#vrows').appendChild(d);
+}
+function ventaRows(){return [...document.querySelectorAll('#vrows .vrow')].map(r=>({ml:+(r.querySelector('input[type=radio]:checked')?.value||0),nombre:r.querySelector('.ac').value,cant:+r.querySelector('input[type=number]').value||0}))}
+function ventaTotal(){return ventaRows().reduce((a,r)=>a+(r.ml?pubPrice(r.ml)*r.cant:0),0)}
+function calc2(){const t=ventaTotal(),d=+$('#debe').value||0;$('#res').textContent=t?`Total ${money(t)} · Pagó ${money(Math.max(t-d,0))}`:''}
+function saveVenta(e,vid){
+  e.preventDefault();const f=new FormData(e.target);const rows=ventaRows();
+  if(!rows.length)return formErr('Agrega al menos un perfume.');
+  const items=[];
+  for(const [i,r] of rows.entries()){
+    const p=perfByName(r.nombre),n=rows.length>1?` (perfume ${i+1})`:'';
+    if(!r.ml)return formErr('Elige el tamaño'+n+'.');
+    if(!p)return formErr('Elige un perfume de la lista que aparece al escribir'+n+'.');
+    if(r.cant<1)return formErr('La cantidad debe ser al menos 1'+n+'.');
+    items.push({pid:p.id,ml:r.ml,cant:r.cant,precio:pubPrice(r.ml)});
+  }
+  const ms=enMano(vid),need={};
+  items.forEach(i=>need[i.pid+'|'+i.ml]=(need[i.pid+'|'+i.ml]||0)+i.cant);
+  for(const k in need){const[p,ml]=k.split('|'),hay=ms[k]||0;
+    if(hay<need[k])return formErr(hay?`Solo tienes ${hay} de ${pname(p)} ${ml} ml (intentas vender ${need[k]}).`:`No tienes ${pname(p)} de ${ml} ml asignado. Pídele al dueño que te lo entregue primero.`)}
+  const total=items.reduce((a,i)=>a+i.cant*i.precio,0),debe=+f.get('debe')||0;
+  if(debe>total)return formErr('Lo que debe no puede ser mayor al total ('+money(total)+').');
+  const pago=total-debe;
+  db.ventas.push({id:uid(),vid,fecha:new Date().toISOString(),cliente:f.get('cliente').trim(),items,total,abonos:pago?[{fecha:new Date().toISOString(),monto:pago}]:[]});
+  save();dlg.close();render();toast('Venta guardada');
+}
+function addItem(vid){
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML=`${acInput('placeholder="Buscar perfume…"')}
+  <select onchange="this.parentNode.children[3].value=pubPrice(this.value);calc()">${db.tamanos.map(t=>`<option value="${t.ml}">${t.ml} ml</option>`).join('')}</select>
+  <input type="number" min="1" value="1" oninput="calc()"><input type="number" min="0" value="${pubPrice(db.tamanos[0].ml)}" oninput="calc()"><button type="button" class="link del" onclick="this.parentNode.remove();calc()">✕</button>`;
+  $('#items').appendChild(d);calc();
+}
+const perfByName=n=>db.perfumes.find(p=>p.nombre.toLowerCase()===n.trim().toLowerCase());
+const rowsItems=()=>[...document.querySelectorAll('#items .item')].map(r=>({pid:perfByName(r.querySelector('.ac').value)?.id,ml:+r.children[1].value,cant:+r.children[2].value,precio:+r.children[3].value})).filter(i=>i.pid&&i.cant>0);
+const totalVenta=()=>rowsItems().reduce((a,i)=>a+i.cant*i.precio,0);
+function calc(){const t=$('#tot');if(t)t.value=money(totalVenta())}
+function delVenta(id){ask('¿Eliminar esta venta?',()=>{db.ventas=db.ventas.filter(x=>x.id!==id);save();render()})}
+function clientesView(vid){
+  const cb=porCobrar(vid);const tot=cb.reduce((a,c)=>a+c.saldo,0);
+  return `<div class="card kpi"><small>Total que te deben</small><b>${money(tot)}</b></div>
+  <div class="card tw">${cb.length?`<table><tr><th>Cliente</th><th class="n">Debe</th><th></th></tr>${cb.map(c=>`<tr><td style="cursor:pointer" onclick="verCliente('${vid}','${esc(c.nombre.toLowerCase()).replace(/'/g,"\\'")}')"><span style="color:var(--brand)">${esc(c.nombre)}</span><div class="mute" style="font-size:12px">${c.ventas.map(x=>fdate(x.fecha)).join(', ')}</div></td><td class="n"><b>${money(c.saldo)}</b></td><td class="n"><button class="btn" onclick="formAbono('${vid}','${esc(c.nombre.toLowerCase()).replace(/'/g,"\\'")}')">Abonar</button></td></tr>`).join('')}</table>`:'<div class="empty">Nadie te debe 🎉</div>'}</div>`;
+}
+function formAbono(vid,key){
+  const c=porCobrar(vid).find(x=>x.nombre.toLowerCase()===key);if(!c)return;
+  openDlg(`<h2>Abono de ${esc(c.nombre)}</h2><p class="mute">Debe ${money(c.saldo)}</p><form onsubmit="saveAbono(event,'${vid}','${esc(key).replace(/'/g,"\\'")}')"><label class="mute">Monto recibido</label><input name="m" type="number" min="1" max="${c.saldo}" value="${c.saldo}" required>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+}
+function saveAbono(e,vid,key){
+  e.preventDefault();let m=+new FormData(e.target).get('m');const c=porCobrar(vid).find(x=>x.nombre.toLowerCase()===key);
+  for(const x of c.ventas.sort((a,b)=>a.fecha.localeCompare(b.fecha))){if(m<=0)break;const s=x.total-ventaPagado(x);const a=Math.min(s,m);x.abonos.push({fecha:new Date().toISOString(),monto:a});m-=a}
+  save();dlg.close();render();
+}
+
+/* ---------- vistas del dueño ---------- */
+function periodoSel(){return `<select onchange="S.periodo=this.value;render()"><option value="todo">Todo el tiempo</option>${quincenas().map(q=>`<option value="${q.k}" ${S.periodo===q.k?'selected':''}>${q.label}</option>`).join('')}</select>`}
+function resumen(){
+  const vs=db.vendedores.filter(v=>!v.admin);
+  const vp=db.ventas.filter(x=>enPeriodo(x.fecha));
+  const cnt={};vp.forEach(x=>x.items.forEach(i=>cnt[i.pid]=(cnt[i.pid]||0)+i.cant));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const deben=vs.reduce((a,v)=>a+debeAlDueno(v.id).saldo,0);
+  const cobrar=vs.reduce((a,v)=>a+porCobrar(v.id).reduce((b,c)=>b+c.saldo,0),0);
+  const mano=vs.reduce((a,v)=>a+totalMano(v.id),0);
+  const bod=db.perfumes.reduce((a,p)=>a+(p.bodega||0),0);
+  return `<div class="row"><h2 style="margin:0">Resumen</h2><div class="sp"></div>${periodoSel()}</div>
+  <div class="grid"><div class="card kpi"><small>Vendidas en el periodo</small><b>${vp.reduce((a,x)=>a+x.items.reduce((b,i)=>b+i.cant,0),0)}</b><small>${money(vp.reduce((a,x)=>a+x.total,0))}</small></div>
+  <div class="card kpi"><small>Vendedores te deben</small><b class="${deben>0?'bad':''}">${money(deben)}</b></div>
+  <div class="card kpi"><small>Clientes deben a vendedores</small><b>${money(cobrar)}</b></div>
+  <div class="card kpi"><small>En manos de vendedores</small><b>${mano}</b><small>Bodega: ${bod}</small></div></div>
+  <div class="card tw"><h2>Por vendedor</h2><table><tr><th>Vendedor</th><th class="n">En mano</th><th class="n">Vendidas</th><th class="n">Debe al dueño</th><th class="n">Clientes le deben</th><th></th></tr>
+  ${vs.map(v=>{const d=debeAlDueno(v.id);const vu=vp.filter(x=>x.vid===v.id).reduce((a,x)=>a+x.items.reduce((b,i)=>b+i.cant,0),0);
+  return `<tr><td>${esc(v.nombre)}</td><td class="n">${totalMano(v.id)}</td><td class="n">${vu}</td><td class="n"><b class="${d.saldo>0?'bad':''}">${money(d.saldo)}</b></td><td class="n">${money(porCobrar(v.id).reduce((a,c)=>a+c.saldo,0))}</td><td class="n"><button class="link" onclick="S.vid='${v.id}';S.tab='vendedor';render()">Ver</button></td></tr>`}).join('')}</table></div>
+  <div class="card tw"><h2>🏆 Referencias más vendidas</h2>${top.length?`<table>${top.map(([id,n])=>`<tr><td>${esc(pname(id))}</td><td class="n">${n} uds</td></tr>`).join('')}</table>`:'<div class="empty">Aún no hay ventas por referencia.</div>'}</div>`;
+}
+function vendedorAdmin(){
+  const vs=db.vendedores.filter(v=>!v.admin);S.vid=S.vid&&vend(S.vid)?S.vid:vs[0]?.id;
+  const v=vend(S.vid);const d=debeAlDueno(S.vid);
+  const pagos=db.pagos.filter(p=>p.vid===S.vid).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return `<div class="row"><select onchange="S.vid=this.value;render()">${vs.map(x=>`<option value="${x.id}" ${x.id===S.vid?'selected':''}>${esc(x.nombre)}</option>`).join('')}</select>
+  <button class="btn" onclick="formVendedor()">+ Nuevo vendedor</button><button class="btn" onclick="formVendedor('${S.vid}')">Editar</button><div class="sp"></div>
+  <button class="btn pri" onclick="formPago('${S.vid}')">Registrar pago recibido</button></div>
+  ${miCuenta(S.vid)}
+  <div class="card tw"><h2>Pagos entregados al dueño · saldo ${money(d.saldo)}</h2>${pagos.length?`<table>${pagos.map(p=>`<tr><td>${fdate(p.fecha)}</td><td class="n">${money(p.monto)}</td><td class="mute">${esc(p.nota||'')}</td><td><button class="link del" onclick="delPago('${p.id}')">✕</button></td></tr>`).join('')}</table>`:'<div class="empty">Sin pagos.</div>'}</div>
+  <div class="card tw"><h2>Clientes que le deben</h2>${porCobrar(S.vid).map(c=>`<div>${esc(c.nombre)}: <b>${money(c.saldo)}</b></div>`).join('')||'<div class="empty">Nadie.</div>'}</div>`;
+}
+function formVendedor(id){
+  const v=id?vend(id):{nombre:'',precios:{}};
+  openDlg(`<h2>${id?'Editar':'Nuevo'} vendedor</h2><form onsubmit="saveVendedor(event,'${id||''}')"><div class="f">
+  <div class="full"><label>Nombre</label><input name="nombre" required value="${esc(v.nombre)}"></div>
+  ${id?'':`<div><label>Usuario (para entrar)</label><input name="u" required autocapitalize="none" placeholder="ej. carlosmario"></div><div><label>Contraseña inicial</label><input name="p" type="text" minlength="6" required placeholder="mínimo 6"></div>`}
+  <div class="full mute">Precio que paga al dueño por unidad (vacío = precio público, es decir sin comisión)</div>
+  ${db.tamanos.map(t=>`<div><label>${t.ml} ml (público ${money(t.precio)})</label><input name="p${t.ml}" type="number" min="0" value="${v.precios?.[t.ml]??''}"></div>`).join('')}</div>
+  <p id="err" class="bad"></p><div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+}
+async function saveVendedor(e,id){
+  e.preventDefault();const f=new FormData(e.target),b=e.target.querySelector('.pri');const precios={};db.tamanos.forEach(t=>{const x=f.get('p'+t.ml);if(x!=='')precios[t.ml]=+x});
+  const nombre=f.get('nombre').trim();
+  if(id){Object.assign(vend(id),{nombre,precios});save();dlg.close();return render()}
+  b.disabled=true;
+  const T=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,storageKey:'sb-tmp'}});
+  const{data,error}=await T.auth.signUp({email:emailDe(f.get('u')),password:f.get('p')});
+  if(error||!data.user||!data.user.identities?.length){b.disabled=false;return formErr(error?.message||'Ese usuario ya existe.')}
+  db.vendedores.push({id:data.user.id,nombre,admin:false,precios});S.vid=data.user.id;
+  save();dlg.close();render();toast('Vendedor creado. Usuario: '+f.get('u').trim().toLowerCase());
+}
+function formPago(vid){
+  openDlg(`<h2>Pago recibido de ${esc(vend(vid).nombre)}</h2><form onsubmit="savePago(event,'${vid}')"><div class="f"><div><label>Monto</label><input name="m" type="number" min="1" required value="${Math.max(debeAlDueno(vid).saldo,0)||''}"></div><div><label>Nota</label><input name="n"></div></div>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+}
+function savePago(e,vid){e.preventDefault();const f=new FormData(e.target);db.pagos.push({id:uid(),vid,fecha:new Date().toISOString(),monto:+f.get('m'),nota:f.get('n')});save();dlg.close();render()}
+function delPago(id){ask('¿Eliminar este pago?',()=>{db.pagos=db.pagos.filter(p=>p.id!==id);save();render()})}
+
+function entregasView(){
+  const l=[...db.entregas].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,60);
+  return `<div class="row"><button class="btn pri" onclick="formEntrega('entrega')">+ Entregar perfumes a vendedor</button><button class="btn" onclick="formEntrega('devolucion')">Registrar devolución</button></div>
+  <div class="card tw">${l.length?`<table><tr><th>Fecha</th><th>Vendedor</th><th></th><th>Detalle</th><th></th></tr>${l.map(e=>`<tr><td>${fdate(e.fecha)}</td><td>${esc(vend(e.vid)?.nombre)}</td><td><span class="tag ${e.tipo==='devolucion'?'bad':''}">${e.tipo==='devolucion'?'devolución':'entrega'}</span></td><td class="mute">${e.items.map(i=>`${i.cant}× ${esc(pname(i.pid))} ${i.ml}`).join(', ')}</td><td><button class="link del" onclick="delEntrega('${e.id}')">✕</button></td></tr>`).join('')}</table>`:'<div class="empty">Aún no hay entregas.</div>'}</div>`;
+}
+function formEntrega(tipo){
+  openDlg(`<h2>${tipo==='devolucion'?'Devolución de perfumes':'Entrega de perfumes'}</h2><form onsubmit="saveEntrega(event,'${tipo}')">
+  <label class="mute">Vendedor</label><select name="v" style="margin-bottom:10px">${db.vendedores.filter(v=>!v.admin).map(v=>`<option value="${v.id}">${esc(v.nombre)}</option>`).join('')}</select>
+  <div id="items"></div><button type="button" class="btn" onclick="addItem()">+ Otro perfume</button><p id="err" class="bad"></p>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+  addItem();
+}
+function saveEntrega(e,tipo){
+  e.preventDefault();const items=rowsItems().map(({pid,ml,cant})=>({pid,ml,cant}));if(!items.length)return formErr('Elige al menos un perfume de la lista.');
+  items.forEach(i=>{const p=perf(i.pid);p.bodega=Math.max(0,(p.bodega||0)+(tipo==='devolucion'?i.cant:-i.cant))});
+  db.entregas.push({id:uid(),vid:new FormData(e.target).get('v'),tipo,fecha:new Date().toISOString(),items});save();dlg.close();render();
+}
+function delEntrega(id){ask('¿Eliminar este registro? (no modifica la bodega)',()=>{db.entregas=db.entregas.filter(x=>x.id!==id);save();render()})}
+
+function catalogo(){
+  const e=db.esencias;
+  return `<div class="card"><h2>Precios públicos (por frasco)</h2><div class="row">${db.tamanos.map(t=>`<label>${t.ml} ml <input type="number" value="${t.precio}" style="width:110px" onchange="db.tamanos.find(x=>x.ml==${t.ml}).precio=+this.value;save()"></label>`).join('')}</div>
+  <h2 style="margin-top:12px">Costo de esencia al proveedor</h2>
+  <table><tr><th></th><th>Onza</th><th>100 g</th></tr>${['clasica','premium'].map(k=>`<tr><td>${k==='clasica'?'Clásica':'Premium'}</td><td><input type="number" value="${e[k].onza}" style="width:110px" onchange="db.esencias.${k}.onza=+this.value;save()"></td><td><input type="number" value="${e[k].g100}" style="width:110px" onchange="db.esencias.${k}.g100=+this.value;save()"></td></tr>`).join('')}</table></div>
+  <div class="row"><input type="search" placeholder="Buscar entre ${db.perfumes.length} referencias…" value="${esc(S.q)}" oninput="S.q=this.value;$('#lc').innerHTML=catTabla()">
+  <select onchange="S.ft=this.value;$('#lc').innerHTML=catTabla()"><option value="">Todas</option><option value="clasica" ${S.ft==='clasica'?'selected':''}>Clásicas</option><option value="premium" ${S.ft==='premium'?'selected':''}>Premium</option><option value="bodega" ${S.ft==='bodega'?'selected':''}>Con stock en bodega</option></select>
+  <button class="btn pri" onclick="formPerfume()">+ Nueva referencia</button></div>
+  <div class="card tw" id="lc">${catTabla()}</div>`;
+}
+function catTabla(){
+  const q=S.q.toLowerCase();
+  const l=db.perfumes.filter(p=>p.nombre.toLowerCase().includes(q)&&(!S.ft||(S.ft==='bodega'?p.bodega>0:p.tipo===S.ft))).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const vm=db.ventas.reduce((m,x)=>{x.items.forEach(i=>m[i.pid]=(m[i.pid]||0)+i.cant);return m},{});
+  return `<table><tr><th>Referencia</th><th>Género</th><th>Esencia</th><th class="n">Bodega</th><th class="n">Vendidas</th><th></th></tr>${l.slice(0,200).map(p=>`<tr><td>${esc(p.nombre)}</td><td class="mute">${esc(p.genero)}</td><td><span class="tag">${p.tipo==='premium'?'Premium':'Clásica'}</span></td><td class="n">${p.bodega||0}</td><td class="n">${vm[p.id]||0}</td><td class="n"><button class="link" onclick="formPerfume('${p.id}')">Editar</button><button class="link del" onclick="delPerfume('${p.id}')">✕</button></td></tr>`).join('')}</table>${l.length>200?`<div class="empty">Mostrando 200 de ${l.length}. Usa el buscador.</div>`:''}`;
+}
+function formPerfume(id){
+  const p=id?perf(id):{nombre:'',bodega:0,genero:'',tipo:'clasica'};
+  openDlg(`<h2>${id?'Editar':'Nueva'} referencia</h2><form onsubmit="savePerfume(event,'${id||''}')"><div class="f"><div class="full"><label>Nombre</label><input name="n" required value="${esc(p.nombre)}"></div>
+  <div><label>Género</label><select name="g">${['','Hombre','Mujer','Unisex'].map(g=>`<option ${g===p.genero?'selected':''}>${g}</option>`).join('')}</select></div>
+  <div><label>Esencia</label><select name="t"><option value="clasica" ${p.tipo==='clasica'?'selected':''}>Clásica</option><option value="premium" ${p.tipo==='premium'?'selected':''}>Premium</option></select></div>
+  <div><label>Unidades en bodega</label><input name="b" type="number" min="0" value="${p.bodega||0}"></div></div>
+  <div class="actions"><button type="button" class="btn" onclick="dlg.close()">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+}
+function savePerfume(e,id){e.preventDefault();const f=new FormData(e.target);const d={nombre:f.get('n').trim(),genero:f.get('g'),tipo:f.get('t'),bodega:+f.get('b')};if(id)Object.assign(perf(id),d);else db.perfumes.push({id:uid(),...d});save();dlg.close();render()}
+function delPerfume(id){ask('¿Borrar referencia?',()=>{db.perfumes=db.perfumes.filter(p=>p.id!==id);save();render()})}
+function datos(){
+  return `<div class="card"><h2>Respaldo</h2><p class="mute">Tus datos están guardados en la nube (Supabase) y todos los vendedores ven lo suyo en tiempo real. Aun así, descarga un respaldo en cada corte quincenal: el plan gratis no hace copias automáticas.</p>
+  <div class="row"><button class="btn pri" onclick="exportJSON()">Descargar respaldo</button></div></div>`;
+}
+function exportJSON(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,1)],{type:'application/json'}));a.download=`perfumeria-${new Date().toISOString().slice(0,10)}.json`;a.click()}
+
+const dlg=$('#dlg');
+function openDlg(h,vid){dlg.dataset.vid=vid||'';dlg.innerHTML=h;dlg.showModal()}
+/* autocompletado propio (sin el desplegable del navegador) */
+function acItems(inp){
+  const q=inp.value.toLowerCase().trim().split(/\s+/).filter(Boolean);const vid=dlg.dataset.vid;
+  if(inp.dataset.src==='cli'){return [...new Set(db.ventas.filter(x=>x.vid===vid).map(x=>x.cliente.trim()))].filter(n=>q.every(t=>n.toLowerCase().includes(t))).slice(0,8).map(n=>[n,''])}
+  const ms=vid?enMano(vid):{};const held={};Object.entries(ms).forEach(([k,c])=>{if(c>0){const p=k.split('|')[0];held[p]=(held[p]||0)+c}});
+  const solo=vid&&Object.keys(held).length;
+  return db.perfumes.filter(p=>(!solo||held[p.id])&&q.every(t=>p.nombre.toLowerCase().includes(t))).sort((a,b)=>a.nombre.localeCompare(b.nombre)).slice(0,8).map(p=>[p.nombre,solo?held[p.id]+' disp.':'']);
+}
+function acShow(inp){if(inp.dataset.src!=='cli')return;const l=inp.parentNode.querySelector('.aclist');const it=acItems(inp);
+  l.innerHTML=it.map(([n,x])=>`<div data-v="${esc(n)}">${esc(n)} <small>${x}</small></div>`).join('');l.style.display=it.length?'block':'none'}
+document.addEventListener('input',e=>{if(e.target.classList.contains('ac'))acShow(e.target)});
+document.addEventListener('focusin',e=>{if(e.target.classList.contains('ac'))acShow(e.target)});
+document.addEventListener('click',e=>{if(e.target.classList.contains('pk'))openPicker(e.target)});
+document.addEventListener('mousedown',e=>{const d=e.target.closest('.aclist div');
+  if(d){e.preventDefault();const inp=d.closest('.acw').querySelector('.ac');inp.value=d.dataset.v;d.parentNode.style.display='none';inp.dispatchEvent(new Event('change',{bubbles:true}))}
+  else document.querySelectorAll('.aclist').forEach(l=>{if(!l.parentNode.contains(e.target))l.style.display='none'})});
+const acInput=(attrs,src='perf')=>src==='perf'
+  ?`<div class="acw"><input class="ac pk" data-src="perf" readonly style="cursor:pointer" ${attrs}></div>`
+  :`<div class="acw"><input class="ac" data-src="${src}" autocomplete="off" ${attrs}><div class="aclist"></div></div>`;
+/* selector de perfume a pantalla completa */
+let pkTarget=null,pkAll=false;
+function openPicker(inp){
+  pkTarget=inp;pkAll=false;const dp=$('#dlgp');
+  dp.innerHTML=`<div class="pk-wrap"><div class="pk-top"><input id="pq" placeholder="Buscar perfume…" autocomplete="off" oninput="pkRender()"><button type="button" class="btn" onclick="dlgp.close()">✕</button></div><div id="pl"></div></div>`;
+  dp.showModal();pkRender();$('#pq').focus();
+}
+function pkRender(){
+  const vid=dlg.dataset.vid,q=$('#pq').value.toLowerCase().trim().split(/\s+/).filter(Boolean),raw=$('#pq').value.trim();
+  const ml=+(pkTarget.closest('.vrow')?.querySelector('input[type=radio]:checked')?.value||0);
+  const held={},det={};
+  if(vid)Object.entries(enMano(vid)).forEach(([k,c])=>{if(c>0){const[p,m]=k.split('|');if(ml&&+m!==ml)return;held[p]=(held[p]||0)+c;(det[p]??=[]).push(`${m}ml×${c}`)}});
+  const l=db.perfumes.filter(p=>(!vid||held[p.id])&&q.every(t=>p.nombre.toLowerCase().includes(t))).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const exacto=raw&&perfByName(raw);
+  $('#pl').innerHTML=(!vid&&raw&&!exacto?`<div class="pk-row pk-add" data-add="1">＋ Agregar «${esc(raw)}» al catálogo</div>`:'')
+    +l.map(p=>`<div class="pk-row" data-id="${p.id}"><span>${esc(p.nombre)}</span>${vid?`<small>${det[p.id].join(' · ')}</small>`:''}</div>`).join('')
+    +(!l.length?`<div class="empty">${vid?(ml?`No tienes perfumes de ${ml} ml asignados${raw?' con ese nombre':''}.`:'No hay perfumes asignados con ese nombre.'):'Sin resultados'}</div>`:'');
+}
+document.addEventListener('click',e=>{
+  const r=e.target.closest('#pl .pk-row');if(!r)return;
+  if(r.dataset.all){pkAll=true;return pkRender()}
+  let p;
+  if(r.dataset.add){p={id:uid(),nombre:$('#pq').value.trim(),genero:'',tipo:'clasica',bodega:0};db.perfumes.push(p);save();toast('«'+p.nombre+'» agregado al catálogo')}
+  else p=perf(r.dataset.id);
+  pkTarget.value=p.nombre;$('#dlgp').close();pkTarget.dispatchEvent(new Event('change',{bubbles:true}));
+});
+
+arrancar();
+</script>
+</body>
+</html>
