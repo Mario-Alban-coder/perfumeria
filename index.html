@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Perfumeria MV</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#7a3e65">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Perfumeria MV">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--bg:#f6f4f1;--card:#fff;--ink:#241f1c;--mute:#7a716a;--line:#e6e0da;--brand:#7a3e65;--brand2:#f1e4ec;--ok:#2f7d4f;--warn:#b7791f;--bad:#b3392f}
 @media (prefers-color-scheme:dark){:root{--bg:#161214;--card:#211b1e;--ink:#f1ebe7;--mute:#a79b94;--line:#352c30;--brand:#d58bbb;--brand2:#3a2633;--ok:#6cc08c;--warn:#e0b25a;--bad:#ef7f74}}
@@ -165,12 +173,15 @@ async function login(e){
 async function arrancar(){
   $('#app').innerHTML='<div class="empty">Cargando…</div>';
   const{data:{session}}=await SB.auth.getSession();if(!session){S.user=null;return render()}
-  const{data:yo}=await SB.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  const sinConexion=m=>{$('#hd').innerHTML='';$('#nv').innerHTML='';$('#app').innerHTML=`<div class="login card"><h1 style="font-size:22px">Sin conexión</h1><p class="mute">${esc(m)} Tu sesión sigue guardada.</p><button class="btn pri" style="width:100%" onclick="arrancar()">Reintentar</button><button class="link" style="margin-top:10px" onclick="salir()">Cerrar sesión</button></div>`};
+  const{data:yo,error:e1}=await SB.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  if(e1)return sinConexion('No se pudo conectar.');
   if(!yo){const{data:pend}=await SB.from('solicitudes').select('id').eq('id',session.user.id).maybeSingle();
     await SB.auth.signOut();S.user=null;render();
     return formErr(pend?'Tu solicitud está pendiente: el dueño aún no te ha aprobado.':'Tu usuario no está registrado. Pídele al dueño que te agregue.')}
-  try{await cargarTodo()}catch(e){await SB.auth.signOut();S.user=null;render();return formErr('No se pudo cargar: '+(e.message||'revisa tu conexión'))}
+  try{await cargarTodo()}catch(e){return sinConexion('No se pudieron cargar los datos.')}
   S.user=db.vendedores.find(v=>v.id===yo.id);S.tab='inicio';render();
+  try{navigator.storage?.persist?.()}catch{}   // pide al navegador no borrar la sesión guardada
 }
 async function salir(){await SB.auth.signOut();S.user=null;db=vacio();render()}
 async function crearDueno(e){
