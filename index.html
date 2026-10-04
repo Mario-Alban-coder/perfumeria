@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Perfumería · Vendedores</title>
+<title>Perfumeria MV</title>
 <style>
 :root{--bg:#f6f4f1;--card:#fff;--ink:#241f1c;--mute:#7a716a;--line:#e6e0da;--brand:#7a3e65;--brand2:#f1e4ec;--ok:#2f7d4f;--warn:#b7791f;--bad:#b3392f}
 @media (prefers-color-scheme:dark){:root{--bg:#161214;--card:#211b1e;--ink:#f1ebe7;--mute:#a79b94;--line:#352c30;--brand:#d58bbb;--brand2:#3a2633;--ok:#6cc08c;--warn:#e0b25a;--bad:#ef7f74}}
@@ -240,7 +240,7 @@ function render(){
   const adm=S.user.admin;
   const tabs=adm?[['inicio','Resumen','home'],['vendedor','Vendedores','users'],['entregas','Entregas','box'],['catalogo','Catálogo','tag'],['datos','Más','gear']]
                  :[['inicio','Inicio','home'],['vender','Ventas','list'],['clientes','Deudas','debt']];
-  $('#hd').innerHTML=`<div class="bar"><h1>🌸 Perfumería</h1><span class="sp" style="flex:1"></span><button class="link who" onclick="miPerfil()">${esc(S.user.nombre)}</button><button class="link" onclick="salir()">Salir</button></div>`;
+  $('#hd').innerHTML=`<div class="bar"><h1>🌸 Perfumeria MV</h1><span class="sp" style="flex:1"></span><button class="link who" onclick="miPerfil()">${esc(S.user.nombre)}</button><button class="link" onclick="salir()">Salir</button></div>`;
   $('#nv').innerHTML=`<div class="tabbar"><div>${tabs.map(([k,l,ic])=>`<button class="${k===S.tab?'on':''}" onclick="S.tab='${k}';S.q='';render();scrollTo(0,0)"><svg viewBox="0 0 24 24">${ICON[ic]}</svg>${l}</button>`).join('')}</div></div>`
     +(adm?'':`<button class="fab" onclick="formVenta('${S.user.id}')">＋ Vender</button>`);
   const views={
@@ -250,7 +250,7 @@ function render(){
   $('#app').innerHTML=views[S.tab]();
 }
 function loginView(){
-  return `<div class="login card"><h1 style="font-size:24px">🌸 Perfumería</h1><p class="mute">Inicia sesión</p>
+  return `<div class="login card"><h1 style="font-size:24px">🌸 Perfumeria MV</h1><p class="mute">Inicia sesión</p>
   <form onsubmit="login(event)"><input name="u" placeholder="Usuario" required autocapitalize="none" autocomplete="username" style="margin-bottom:10px">
   <input name="p" type="password" placeholder="Contraseña" required autocomplete="current-password" style="margin-bottom:10px"><p id="err" class="bad" style="margin:0 0 8px"></p><button class="btn pri" style="width:100%">Entrar</button></form>
   <div id="primera"></div></div>`;
